@@ -1,0 +1,43 @@
+#!/bin/sh
+# Validates fastlane/devices.txt format before commit.
+# Rules: tab-separated, exact header, valid UDID, platform must be "ios".
+
+FILE="fastlane/devices.txt"
+
+# Only run when the devices file is staged.
+git diff --cached --name-only | grep -qx "$FILE" || exit 0
+
+fail() {
+	echo "✗ $FILE: $1" >&2
+	echo "  Fix the format (columns MUST be separated by TABs, not spaces) and re-stage." >&2
+	exit 1
+}
+
+[ -f "$FILE" ] || fail "file is staged but missing on disk"
+
+HEADER=$(head -n 1 "$FILE")
+EXPECTED="$(printf 'Device ID\tDevice Name\tDevice Platform')"
+[ "$HEADER" = "$EXPECTED" ] || fail "first line must be the tab-separated header 'Device ID<TAB>Device Name<TAB>Device Platform'"
+
+# Validate each non-empty data row (skip header).
+line_no=1
+tail -n +2 "$FILE" | while IFS= read -r row; do
+	line_no=$((line_no + 1))
+	[ -z "$row" ] && continue
+
+	# Count tab-separated fields; must be exactly 3.
+	cols=$(printf '%s' "$row" | awk -F '\t' '{print NF}')
+	[ "$cols" -eq 3 ] || fail "line $line_no: expected 3 TAB-separated columns (got $cols) — did you use spaces? → $row"
+
+	udid=$(printf '%s' "$row" | cut -f 1)
+	platform=$(printf '%s' "$row" | cut -f 3)
+
+	echo "$udid" | grep -Eq '^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{16}|[0-9A-Fa-f]{40})$' \
+		|| fail "line $line_no: invalid UDID '$udid'"
+	[ "$platform" = "ios" ] || fail "line $line_no: platform must be 'ios' (got '$platform')"
+done
+
+# `while` runs in a subshell; propagate its failure.
+[ $? -eq 0 ] || exit 1
+
+echo "✓ $FILE format OK"

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Runs every executable check in .githooks/pre-commit.d/ in filename order.
+# To add a pre-commit check: drop a new executable file in pre-commit.d/
+# (e.g. 20-swiftformat) — no need to edit this dispatcher.
+
+hook_dir="$(dirname "$0")/pre-commit.d"
+[ -d "$hook_dir" ] || exit 0
+
+for check in "$hook_dir"/*; do
+	[ -x "$check" ] || continue
+	"$check" || exit 1
+done

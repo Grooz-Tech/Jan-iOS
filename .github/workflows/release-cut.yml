@@ -1,0 +1,57 @@
+name: Release Cut
+
+on:
+  schedule:
+    - cron: '0 6 * * 3' # Wednesdays 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version X.Y.Z (default = current MARKETING_VERSION on develop)
+        required: false
+        type: string
+
+jobs:
+  cut:
+    runs-on: tartelet
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GIT_AUTH_TOKEN }}
+
+      - name: Determine versions
+        id: v
+        run: ./scripts/next-version.sh "${{ inputs.version }}"
+
+      - name: Configure git identity
+        uses: ./.github/actions/git-identity
+
+      - name: Create release branch
+        env:
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          git switch -c "release/$V"
+          git push origin "release/$V"
+
+      - name: Bump develop version
+        env:
+          NEXT: ${{ steps.v.outputs.next }}
+        run: |
+          set -euo pipefail
+          git switch develop
+          ./scripts/set-version.sh "$NEXT"
+          git commit -am "chore(version): bump develop to $NEXT"
+          git push origin develop
+
+      - name: Open release PR
+        env:
+          GH_TOKEN: ${{ secrets.GIT_AUTH_TOKEN }}
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh pr create --base main --head "release/$V" \
+            --title "Release $V" \
+            --body ""

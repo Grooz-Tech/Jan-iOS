@@ -1,0 +1,82 @@
+default_platform(:ios)
+
+platform :ios do
+  # Loads the App Store Connect API key from the environment and sets it as the
+  # shared token used by produce / match / register_devices / pilot.
+  def load_asc_api_key
+    app_store_connect_api_key
+  end
+
+  # --- CI/CD team lanes (require the ASC API key) -------------------------
+
+  desc "Register the App ID on the Developer portal. Idempotent. CI/CD team only."
+  lane :register_app do
+    load_asc_api_key
+    produce
+  end
+
+  desc "Register test devices from FL_REGISTER_DEVICES_FILE. CI/CD team only."
+  lane :add_devices do
+    load_asc_api_key
+    register_devices
+  end
+
+  desc "DESTRUCTIVE: revoke ALL match certs & profiles (development + appstore) on the portal and remove them from the certs repo. CI/CD team only. Prompts for confirmation; everyone must re-run `certificates` afterwards."
+  lane :nuke_certificates do
+    load_asc_api_key
+    %w[development appstore].each do |type|
+      match_nuke(type: type)
+    end
+  end
+
+  desc "Create/update signing certs & profiles (read-write). CI/CD team only."
+  lane :certificates_update do
+    load_asc_api_key
+    # force_for_new_devices regenerates the development profile when the device
+    # list changes (ignored for the appstore profile).
+    %w[development appstore].each do |type|
+      match(type: type, readonly: false, force_for_new_devices: true)
+    end
+  end
+
+  # --- Developer / CI lanes (need only MATCH_PASSWORD) --------------------
+
+  desc "Fetch & install existing signing certs/profiles (readonly). Developer / CI."
+  lane :certificates do
+    %w[development appstore].each do |type|
+      match(type: type, readonly: true)
+    end
+  end
+
+  desc "Run the unit tests. Developer / CI."
+  lane :test do
+    run_tests
+  end
+
+  desc "Build a signed App Store archive. Developer / CI."
+  lane :build do
+    certificates
+    gym
+  end
+
+  desc "Upload the built archive to TestFlight. Runs after `build` in the same job. CI/CD team only."
+  lane :deploy do
+    load_asc_api_key
+    pilot
+  end
+
+  desc "Upload the built archive to App Store Connect WITHOUT submitting for review. CI/CD team only."
+  lane :release do
+    load_asc_api_key
+    # Metadata & screenshots are managed in the App Store Connect UI.
+    # This uploads/attaches the build only — a human presses "Submit for Review".
+    deliver(
+      skip_metadata: true,
+      skip_screenshots: true,
+      submit_for_review: false,
+      run_precheck_before_submit: false,
+      precheck_include_in_app_purchases: false,
+      force: true
+    )
+  end
+end

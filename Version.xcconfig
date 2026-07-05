@@ -1,0 +1,4 @@
+// Marketing version (CFBundleShortVersionString).
+// Source of truth for the app version — bumped when cutting a release branch.
+// The build number (CURRENT_PROJECT_VERSION) comes from CI (github.run_number).
+MARKETING_VERSION = 1.1.0

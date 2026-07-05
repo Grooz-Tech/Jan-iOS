@@ -1,0 +1,16 @@
+name: Git HTTPS auth
+description: Authenticate github.com HTTPS clones with a token.
+
+inputs:
+  token:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Configure git HTTPS auth for github.com
+      shell: bash
+      run: |
+        git config --global \
+          url."https://x-access-token:${{ inputs.token }}@github.com/".insteadOf \
+          "https://github.com/"

@@ -1,0 +1,69 @@
+name: Tag & Back-merge
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tag-and-backmerge:
+    runs-on: tartelet
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GIT_AUTH_TOKEN }}
+
+      - name: Read version
+        id: v
+        run: echo "version=$(./scripts/read-version.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Configure git identity
+        uses: ./.github/actions/git-identity
+
+      - name: Tag release (idempotent)
+        env:
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/v$V" >/dev/null 2>&1; then
+            echo "Tag v$V already exists — skipping."
+          else
+            git tag -a "v$V" -m "Release $V"
+            git push origin "v$V"
+          fi
+
+      - name: Back-merge main into develop
+        env:
+          GH_TOKEN: ${{ secrets.GIT_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin develop
+          git switch develop
+
+          # Try to merge main. If it conflicts, resolve Version.xcconfig to
+          # develop's side (it runs ahead) and continue.
+          if git merge --no-ff --no-edit origin/main; then
+            git push origin develop
+            exit 0
+          fi
+          if git checkout --ours Version.xcconfig \
+             && git add Version.xcconfig \
+             && git -c core.editor=true merge --continue; then
+            git push origin develop
+            exit 0
+          fi
+
+          # Still conflicting (files other than Version.xcconfig). Do NOT resolve
+          # on main — that would re-trigger this workflow and loop. Abort, and
+          # open a PR from a temp branch into develop for manual resolution.
+          # main is never modified.
+          git merge --abort
+          branch="chore/backmerge-main-$(git rev-parse --short origin/main)"
+          git switch -c "$branch" origin/main
+          git push -f origin "$branch"
+
+          gh pr create --base develop --head "$branch" \
+            --title "chore: back-merge main into develop" \
+            --body "Automated back-merge hit conflicts. Resolve here — this does not touch main." \
+            || echo "PR already exists for $branch"

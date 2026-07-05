@@ -1,0 +1,52 @@
+name: App Store
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: appstore-${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: tartelet
+    environment: appstore
+    env:
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_API_KEY_ADMIN_B64 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Build number = run_number + 100 (App Store range, distinct from the
+      # TestFlight workflow's +1000 range). Marketing version from Version.xcconfig.
+      - name: Set build number
+        run: echo "TUIST_CURRENT_PROJECT_VERSION=$(( ${{ github.run_number }} + 100 ))" >> "$GITHUB_ENV"
+
+      - name: Configure git auth
+        uses: ./.github/actions/git-auth
+        with:
+          token: ${{ secrets.GIT_AUTH_TOKEN }}
+
+      - name: Install dependencies
+        run: tuist install
+
+      - name: Generate Xcode project
+        run: tuist generate --no-open
+
+      - name: Build
+        run: fastlane build
+
+      - name: Upload IPA and dSYM
+        uses: actions/upload-artifact@v4
+        with:
+          name: __APP_NAME__-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
+          path: |
+            *.ipa
+            *.dSYM.zip
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload to App Store Connect (no submit)
+        run: fastlane release

@@ -1,0 +1,60 @@
+name: TestFlight
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: TestFlight "What to Test" notes (manual runs)
+        required: false
+        type: string
+
+concurrency:
+  group: testflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: tartelet
+    environment: testflight
+    env:
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_API_KEY_ADMIN_B64 }}
+      # TestFlight "What to Test": manual input if provided, else the PR description.
+      PILOT_CHANGELOG: ${{ inputs.changelog || github.event.pull_request.body }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Build number = run_number + 1000 (TestFlight range, distinct from the
+      # App Store workflow's +100 range). Marketing version from Version.xcconfig.
+      - name: Set build number
+        run: echo "TUIST_CURRENT_PROJECT_VERSION=$(( ${{ github.run_number }} + 1000 ))" >> "$GITHUB_ENV"
+
+      - name: Configure git auth
+        uses: ./.github/actions/git-auth
+        with:
+          token: ${{ secrets.GIT_AUTH_TOKEN }}
+
+      - name: Install dependencies
+        run: tuist install
+
+      - name: Generate Xcode project
+        run: tuist generate --no-open
+
+      - name: Build
+        run: fastlane build
+
+      - name: Upload IPA and dSYM
+        uses: actions/upload-artifact@v4
+        with:
+          name: __APP_NAME__-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
+          path: |
+            *.ipa
+            *.dSYM.zip
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload to TestFlight
+        run: fastlane deploy
