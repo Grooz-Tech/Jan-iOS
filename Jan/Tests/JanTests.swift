@@ -1,8 +1,8 @@
 import Foundation
 import XCTest
-@testable import __APP_NAME__
+@testable import Jan
 
-final class __APP_NAME__Tests: XCTestCase {
+final class JanTests: XCTestCase {
     func test_example() {
         XCTAssertTrue(true)
     }

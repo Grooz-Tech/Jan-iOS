@@ -55,7 +55,7 @@ jobs:
       - name: Upload IPA and dSYM
         uses: actions/upload-artifact@v4
         with:
-          name: __APP_NAME__-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
+          name: Jan-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
           path: |
             *.ipa
             *.dSYM.zip
