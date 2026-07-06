@@ -50,5 +50,5 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Upload to App Store Connect (no submit)
+      - name: Upload to App Store Connect
         run: fastlane release

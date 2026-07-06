@@ -59,16 +59,15 @@ platform :ios do
     pilot
   end
 
-  desc "Upload the built archive to App Store Connect WITHOUT submitting for review. CI/CD team only."
+  desc "Upload the built archive to App Store Connect submitting for review. CI/CD team only."
   lane :release do
     load_asc_api_key
     # Metadata & screenshots are managed in the App Store Connect UI.
-    # This uploads/attaches the build only — a human presses "Submit for Review".
+    # Uploads the build and submits it for review automatically.
     deliver(
       skip_metadata: true,
       skip_screenshots: true,
-      submit_for_review: false,
-      run_precheck_before_submit: false,
+      submit_for_review: true,
       precheck_include_in_app_purchases: false,
       force: true
     )
