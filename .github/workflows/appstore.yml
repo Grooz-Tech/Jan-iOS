@@ -19,10 +19,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Build number = run_number + 100 (App Store range, distinct from the
-      # TestFlight workflow's +1000 range). Marketing version from Version.xcconfig.
+      # Build number = <minutes-since-2024>.<channel>, channel 3 = App Store.
+      # The time-dominant leading component is globally monotonic across all
+      # workflows; the trailing digit identifies the channel without affecting
+      # ordering. UInt32-safe. Marketing version from Version.xcconfig.
       - name: Set build number
-        run: echo "TUIST_CURRENT_PROJECT_VERSION=$(( ${{ github.run_number }} + 100 ))" >> "$GITHUB_ENV"
+        run: echo "TUIST_CURRENT_PROJECT_VERSION=$(( ($(date -u +%s) - 1704067200) / 60 )).3" >> "$GITHUB_ENV"
 
       - name: Configure git auth
         uses: ./.github/actions/git-auth
