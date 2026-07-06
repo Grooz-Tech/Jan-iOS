@@ -27,10 +27,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Build number = run_number + 1000 (TestFlight range, distinct from the
-      # App Store workflow's +100 range). Marketing version from Version.xcconfig.
+      # Build number = <minutes-since-2024>.<channel>, channel 2 = TestFlight.
+      # The time-dominant leading component is globally monotonic across all
+      # workflows; the trailing digit identifies the channel without affecting
+      # ordering. UInt32-safe. Marketing version from Version.xcconfig.
       - name: Set build number
-        run: echo "TUIST_CURRENT_PROJECT_VERSION=$(( ${{ github.run_number }} + 1000 ))" >> "$GITHUB_ENV"
+        run: echo "TUIST_CURRENT_PROJECT_VERSION=$(( ($(date -u +%s) - 1704067200) / 60 )).2" >> "$GITHUB_ENV"
 
       - name: Configure git auth
         uses: ./.github/actions/git-auth
@@ -49,7 +51,7 @@ jobs:
       - name: Upload IPA and dSYM
         uses: actions/upload-artifact@v4
         with:
-          name: __APP_NAME__-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
+          name: Jan-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
           path: |
             *.ipa
             *.dSYM.zip

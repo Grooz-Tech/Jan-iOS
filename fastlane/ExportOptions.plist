@@ -7,11 +7,11 @@
 	<key>signingStyle</key>
 	<string>manual</string>
 	<key>teamID</key>
-	<string>__TEAM_ID__</string>
+	<string>BWTLDG8C39</string>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>__BUNDLE_ID__</key>
-		<string>match AppStore __BUNDLE_ID__</string>
+		<key>kz.jan.app</key>
+		<string>match AppStore kz.jan.app</string>
 	</dict>
 </dict>
 </plist>

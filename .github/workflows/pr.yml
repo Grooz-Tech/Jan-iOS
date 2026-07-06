@@ -33,10 +33,16 @@ jobs:
     runs-on: tartelet
     env:
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      TUIST_CURRENT_PROJECT_VERSION: ${{ github.run_number }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Build number = <minutes-since-2024>.<channel>, channel 1 = PR.
+      # The time-dominant leading component is globally monotonic across all
+      # workflows; the trailing digit identifies the channel without affecting
+      # ordering. UInt32-safe. Marketing version from Version.xcconfig.
+      - name: Set build number
+        run: echo "TUIST_CURRENT_PROJECT_VERSION=$(( ($(date -u +%s) - 1704067200) / 60 )).1" >> "$GITHUB_ENV"
 
       - name: Configure git auth
         uses: ./.github/actions/git-auth
@@ -55,7 +61,7 @@ jobs:
       - name: Upload IPA and dSYM
         uses: actions/upload-artifact@v4
         with:
-          name: __APP_NAME__-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
+          name: Jan-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
           path: |
             *.ipa
             *.dSYM.zip

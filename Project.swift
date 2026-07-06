@@ -1,10 +1,10 @@
 import ProjectDescription
 
-let teamId = "__TEAM_ID__"
+let teamId = "BWTLDG8C39"
 
-let appBundleId = "__BUNDLE_ID__"
+let appBundleId = "kz.jan.app"
 
-let appDisplayName = "__APP_NAME__"
+let appDisplayName = "Jan"
 
 // MARKETING_VERSION comes from Version.xcconfig (source of truth, bumped per release).
 // Build number is supplied by CI via TUIST_CURRENT_PROJECT_VERSION (github.run_number).
@@ -38,10 +38,10 @@ let appSigningSettings = Settings.settings(
 )
 
 let project = Project(
-    name: "__APP_NAME__",
+    name: "Jan",
     targets: [
         .target(
-            name: "__APP_NAME__",
+            name: "Jan",
             destinations: [.iPhone],
             product: .app,
             bundleId: appBundleId,
@@ -62,23 +62,23 @@ let project = Project(
                 ]
             ),
             buildableFolders: [
-                "__APP_NAME__/Sources",
-                "__APP_NAME__/Resources",
+                "Jan/Sources",
+                "Jan/Resources",
             ],
             dependencies: [],
             settings: appSigningSettings
         ),
         .target(
-            name: "__APP_NAME__Tests",
+            name: "JanTests",
             destinations: [.iPhone],
             product: .unitTests,
-            bundleId: "\(appBundleId).__APP_NAME__Tests",
+            bundleId: "\(appBundleId).JanTests",
             deploymentTargets: .iOS("18.0"),
             infoPlist: .default,
             buildableFolders: [
-                "__APP_NAME__/Tests"
+                "Jan/Tests"
             ],
-            dependencies: [.target(name: "__APP_NAME__")],
+            dependencies: [.target(name: "Jan")],
             settings: .settings(base: ["DEVELOPMENT_TEAM": .string(teamId)])
         ),
     ]

@@ -13,7 +13,7 @@ import PackageDescription
 #endif
 
 let package = Package(
-    name: "__APP_NAME__",
+    name: "Jan",
     dependencies: [
         // Add SPM dependencies here, e.g.:
         // .package(url: "https://github.com/Alamofire/Alamofire", exact: "5.12.0"),
