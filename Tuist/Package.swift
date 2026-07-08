@@ -16,5 +16,6 @@ let package = Package(
     name: "Jan",
     dependencies: [
         .package(url: "https://github.com/Grooz-Tech/swift-snapshot-testing.git", exact: "1.19.2"),
+        .package(url: "https://github.com/element-hq/opus-swift.git", exact: "0.8.4"),
     ]
 )

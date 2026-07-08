@@ -65,7 +65,9 @@ let project = Project(
                 "Jan/Sources",
                 "Jan/Resources",
             ],
-            dependencies: [],
+            dependencies: [
+                .external(name: "YbridOpus"),
+            ],
             settings: appSigningSettings
         ),
         .target(
