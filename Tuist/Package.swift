@@ -15,7 +15,6 @@ import PackageDescription
 let package = Package(
     name: "Jan",
     dependencies: [
-        // Add SPM dependencies here, e.g.:
-        // .package(url: "https://github.com/Alamofire/Alamofire", exact: "5.12.0"),
+        .package(url: "https://github.com/Grooz-Tech/swift-snapshot-testing.git", exact: "1.19.2"),
     ]
 )

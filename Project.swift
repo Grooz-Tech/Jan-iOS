@@ -78,7 +78,10 @@ let project = Project(
             buildableFolders: [
                 "Jan/Tests"
             ],
-            dependencies: [.target(name: "Jan")],
+            dependencies: [
+                .target(name: "Jan"),
+                .external(name: "SnapshotTesting"),
+            ],
             settings: .settings(base: ["DEVELOPMENT_TEAM": .string(teamId)])
         ),
     ]
