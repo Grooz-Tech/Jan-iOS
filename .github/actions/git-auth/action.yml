@@ -10,7 +10,13 @@ runs:
   steps:
     - name: Configure git HTTPS auth for github.com
       shell: bash
+      env:
+        GIT_AUTH_TOKEN: ${{ inputs.token }}
       run: |
-        git config --global \
-          url."https://x-access-token:${{ inputs.token }}@github.com/".insteadOf \
-          "https://github.com/"
+        idx="${GIT_CONFIG_COUNT:-0}"
+        {
+          echo "GIT_CONFIG_KEY_${idx}=url.https://x-access-token:${GIT_AUTH_TOKEN}@github.com/.insteadOf"
+          echo "GIT_CONFIG_VALUE_${idx}=https://github.com/"
+          echo "GIT_CONFIG_COUNT=$((idx + 1))"
+        } >> "$GITHUB_ENV"
+        echo "Configured git to clone github.com repos via the token (per-job, race-free)."
