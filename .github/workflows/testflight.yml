@@ -39,11 +39,8 @@ jobs:
         with:
           token: ${{ secrets.GIT_AUTH_TOKEN }}
 
-      - name: Unlock keychain
-        run: |
-          kc="$HOME/Library/Keychains/login.keychain-db"
-          security unlock-keychain -p "$MATCH_KEYCHAIN_PASSWORD" "$kc"
-          security set-keychain-settings "$kc"
+      - name: Lock keychain (TEMP - testing)
+        run: security lock-keychain "$HOME/Library/Keychains/login.keychain-db"
 
       - name: Install dependencies
         run: tuist install
