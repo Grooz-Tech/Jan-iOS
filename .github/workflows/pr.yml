@@ -57,17 +57,19 @@ jobs:
         with:
           token: ${{ secrets.GIT_AUTH_TOKEN }}
 
-      - name: Keychain probe BEFORE certificates (TEMP)
+      - name: TEMP direct git clone with GIT_TRACE (same probe as inDriver kz3)
+        env:
+          GIT_TRACE: "1"
         run: |
           echo "helper: $(git config --show-origin --get-all credential.helper 2>&1 || echo '<none>')"
-          rc=0; security find-internet-password -s github.com >/dev/null 2>&1 || rc=$?; echo "find github.com BEFORE certificates status=$rc"
-
-      - name: Certificates (TEMP - match clones github.com certs repo)
-        run: fastlane certificates
-
-      - name: Keychain probe AFTER certificates (TEMP)
-        run: |
-          rc=0; security find-internet-password -s github.com >/dev/null 2>&1 || rc=$?; echo "find github.com AFTER certificates status=$rc"
+          rm -rf /tmp/probe-clone
+          rc=0; security find-internet-password -s github.com "$HOME/Library/Keychains/login.keychain-db" >/dev/null 2>&1 || rc=$?; echo "login BEFORE=$rc"
+          echo "--- git clone (trace, token masked) ---"
+          git clone --depth 1 https://github.com/Grooz-Tech/iOS-certificates.git /tmp/probe-clone 2>&1 \
+            | grep -iE "credential|insteadof|run_command|helper|osxkeychain" \
+            | sed -E 's#x-access-token:[^@]*@#x-access-token:***@#g' | head -40 || echo "<no matching trace lines>"
+          rc=0; security find-internet-password -s github.com "$HOME/Library/Keychains/login.keychain-db" >/dev/null 2>&1 || rc=$?; echo "login AFTER=$rc"
+          rm -rf /tmp/probe-clone
 
       - name: Install dependencies
         run: tuist install
