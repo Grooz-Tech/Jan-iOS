@@ -42,14 +42,6 @@ jobs:
       - name: Install dependencies
         run: tuist install
 
-      - name: Keychain probe after install (TEMP)
-        run: |
-          echo "launchctl managername: $(launchctl managername 2>/dev/null || echo '<unavailable>')"
-          echo "console owner: $(stat -f '%Su' /dev/console 2>/dev/null || echo '<none>')"
-          echo "helper: $(git config --show-origin --get-all credential.helper 2>&1 || echo '<none>')"
-          rc=0; security find-internet-password -s github.com >/dev/null 2>&1 || rc=$?; echo "find github.com after install status=$rc"
-          rc=0; security find-internet-password -s github.com -w >/dev/null 2>&1 || rc=$?; echo "read github.com data (-w) after install status=$rc"
-
       - name: Generate Xcode project
         run: tuist generate --no-open
 
