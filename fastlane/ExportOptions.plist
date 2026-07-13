@@ -12,6 +12,8 @@
 	<dict>
 		<key>kz.jan.app</key>
 		<string>match AppStore kz.jan.app</string>
+		<key>kz.jan.app.NotificationService</key>
+		<string>match AppStore kz.jan.app.NotificationService</string>
 	</dict>
 </dict>
 </plist>

@@ -10,32 +10,47 @@ let appDisplayName = "Jan"
 // Build number is supplied by CI via TUIST_CURRENT_PROJECT_VERSION (github.run_number).
 let buildNumber = Environment.currentProjectVersion.getString(default: "1")
 
-let appSigningSettings = Settings.settings(
-    base: [
-        "DEVELOPMENT_TEAM": .string(teamId),
-        "CODE_SIGN_STYLE": "Manual",
-        "CURRENT_PROJECT_VERSION": .string(buildNumber),
-        "INFOPLIST_KEY_CFBundleDisplayName": .string(appDisplayName),
-    ],
-    configurations: [
-        .debug(
-            name: "Debug",
-            settings: [
-                "CODE_SIGN_IDENTITY": "Apple Development",
-                "PROVISIONING_PROFILE_SPECIFIER": "match Development \(appBundleId)",
-            ],
-            xcconfig: "Version.xcconfig"
-        ),
-        .release(
-            name: "Release",
-            settings: [
-                "CODE_SIGN_IDENTITY": "Apple Distribution",
-                "PROVISIONING_PROFILE_SPECIFIER": "match AppStore \(appBundleId)",
-            ],
-            xcconfig: "Version.xcconfig"
-        ),
-    ]
+// Manual signing settings for a target, wiring the "match Development/AppStore <bundleId>"
+// provisioning profiles. `extraBase` adds target-specific base build settings.
+func signingSettings(
+    bundleId: String,
+    extraBase: SettingsDictionary = [:]
+) -> Settings {
+    .settings(
+        base: [
+            "DEVELOPMENT_TEAM": .string(teamId),
+            "CODE_SIGN_STYLE": "Manual",
+            "CURRENT_PROJECT_VERSION": .string(buildNumber),
+        ].merging(extraBase) { _, new in new },
+        configurations: [
+            .debug(
+                name: "Debug",
+                settings: [
+                    "CODE_SIGN_IDENTITY": "Apple Development",
+                    "PROVISIONING_PROFILE_SPECIFIER": "match Development \(bundleId)",
+                ],
+                xcconfig: "Version.xcconfig"
+            ),
+            .release(
+                name: "Release",
+                settings: [
+                    "CODE_SIGN_IDENTITY": "Apple Distribution",
+                    "PROVISIONING_PROFILE_SPECIFIER": "match AppStore \(bundleId)",
+                ],
+                xcconfig: "Version.xcconfig"
+            ),
+        ]
+    )
+}
+
+let serviceExtensionBundleId = "\(appBundleId).NotificationService"
+
+let appSigningSettings = signingSettings(
+    bundleId: appBundleId,
+    extraBase: ["INFOPLIST_KEY_CFBundleDisplayName": .string(appDisplayName)]
 )
+
+let serviceExtensionSigningSettings = signingSettings(bundleId: serviceExtensionBundleId)
 
 let project = Project(
     name: "Jan",
@@ -65,8 +80,30 @@ let project = Project(
                 "Jan/Sources",
                 "Jan/Resources",
             ],
-            dependencies: [],
+            dependencies: [
+                .target(name: "NotificationService"),
+            ],
             settings: appSigningSettings
+        ),
+        .target(
+            name: "NotificationService",
+            destinations: [.iPhone],
+            product: .appExtension,
+            bundleId: serviceExtensionBundleId,
+            deploymentTargets: .iOS("18.0"),
+            infoPlist: .extendingDefault(
+                with: [
+                    "CFBundleDisplayName": "NotificationService",
+                    "NSExtension": [
+                        "NSExtensionPointIdentifier": "com.apple.usernotifications.service",
+                        "NSExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).NotificationService",
+                    ],
+                ]
+            ),
+            buildableFolders: [
+                "NotificationService",
+            ],
+            settings: serviceExtensionSigningSettings
         ),
         .target(
             name: "JanTests",
